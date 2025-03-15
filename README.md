@@ -7,6 +7,8 @@ A simple, extensible Java application for monitoring system resources like CPU a
 - Real-time CPU usage monitoring
 - Memory usage statistics
 - Process monitoring (top memory-consuming processes)
+- Customizable refresh rate
+- Screen clearing for a cleaner display
 - Extensible architecture for adding new metrics
 - Console-based display with regular updates
 
@@ -37,10 +39,13 @@ The script will:
 You can customize the System Monitor with the following options:
 
 - `-p, --processes <count>`: Set the number of top processes to display (default: 5)
+- `-r, --refresh <seconds>`: Set the refresh rate in seconds (default: 2)
 
-Example:
+Examples:
 ```
-./build.sh -p 10
+./build.sh -p 10                  # Show top 10 processes
+./build.sh -r 5                   # Refresh every 5 seconds
+./build.sh -p 8 -r 3              # Show top 8 processes, refresh every 3 seconds
 ```
 
 ## Project Structure

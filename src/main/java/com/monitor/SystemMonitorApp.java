@@ -20,12 +20,24 @@ public class SystemMonitorApp {
     private static void parseArgs(String[] args, MonitoringEngine engine) {
         if (args.length > 0) {
             try {
-                // Check for process count flag: -p or --processes
                 for (int i = 0; i < args.length; i++) {
+                    // Check for process count flag: -p or --processes
                     if ((args[i].equals("-p") || args[i].equals("--processes")) && i + 1 < args.length) {
                         int processCount = Integer.parseInt(args[i + 1]);
                         System.out.println("Setting process display count to: " + processCount);
                         engine.setProcessDisplayCount(processCount);
+                        i++; // Skip the next argument since we've processed it
+                    }
+                    
+                    // Check for refresh rate flag: -r or --refresh
+                    else if ((args[i].equals("-r") || args[i].equals("--refresh")) && i + 1 < args.length) {
+                        int refreshRate = Integer.parseInt(args[i + 1]);
+                        if (refreshRate < 1) {
+                            System.err.println("Refresh rate must be at least 1 second. Using default (2s).");
+                        } else {
+                            System.out.println("Setting refresh rate to: " + refreshRate + " seconds");
+                            engine.setRefreshRate(refreshRate);
+                        }
                         i++; // Skip the next argument since we've processed it
                     }
                 }
@@ -40,5 +52,6 @@ public class SystemMonitorApp {
         System.out.println("Usage: java -cp \"build:lib/*\" com.monitor.SystemMonitorApp [options]");
         System.out.println("Options:");
         System.out.println("  -p, --processes <count>   Number of top processes to display (default: 5)");
+        System.out.println("  -r, --refresh <seconds>   Refresh rate in seconds (default: 2)");
     }
 }
