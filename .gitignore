@@ -1,0 +1,20 @@
+# Build artifacts
+/build/
+/target/
+
+# Dependencies (can be downloaded by build script)
+/lib/
+
+# Logs
+*.log
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+.classpath
+.project
+.settings/
+
+# MacOS files
+.DS_Store
