@@ -44,9 +44,9 @@ javac -d build -cp "lib/*" src/main/java/com/monitor/metrics/*.java src/main/jav
 if [ $? -eq 0 ]; then
     echo "Compilation successful!"
     
-    # Run the application
+    # Run the application with any command line arguments passed to this script
     echo "Running the application..."
-    java -cp "build:lib/*" com.monitor.SystemMonitorApp
+    java -cp "build:lib/*" com.monitor.SystemMonitorApp "$@"
 else
     echo "Compilation failed."
 fi

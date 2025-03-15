@@ -6,6 +6,7 @@ A simple, extensible Java application for monitoring system resources like CPU a
 
 - Real-time CPU usage monitoring
 - Memory usage statistics
+- Process monitoring (top memory-consuming processes)
 - Extensible architecture for adding new metrics
 - Console-based display with regular updates
 
@@ -31,6 +32,17 @@ The script will:
 - Compile the Java code
 - Run the application
 
+### Command Line Options
+
+You can customize the System Monitor with the following options:
+
+- `-p, --processes <count>`: Set the number of top processes to display (default: 5)
+
+Example:
+```
+./build.sh -p 10
+```
+
 ## Project Structure
 
 - `SystemMonitorApp.java` - Main application entry point
@@ -39,6 +51,7 @@ The script will:
   - `SystemMetrics.java` - Base system information
   - `CpuMetrics.java` - CPU usage statistics
   - `MemoryMetrics.java` - Memory usage statistics
+  - `ProcessMetrics.java` - Process monitoring (memory, CPU usage)
 
 ## Extending the Monitor
 
@@ -52,6 +65,6 @@ The system is designed to be extensible. To add new metrics:
 
 - Disk usage monitoring
 - Network traffic monitoring
-- Process monitoring
+- Advanced process filtering and sorting options
 - Data persistence
 - Web or GUI interface
