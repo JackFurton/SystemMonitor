@@ -12,4 +12,12 @@ public class SystemMetrics {
         hardware = systemInfo.getHardware();
         System.out.println("System: " + systemInfo.getOperatingSystem());
     }
+    
+    public SystemInfo getSystemInfo() {
+        return systemInfo;
+    }
+    
+    public HardwareAbstractionLayer getHardware() {
+        return hardware;
+    }
 }

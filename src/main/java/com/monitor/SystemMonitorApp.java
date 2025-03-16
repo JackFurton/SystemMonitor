@@ -1,42 +1,73 @@
 package com.monitor;
 
 import com.monitor.core.MonitoringEngine;
-import com.monitor.metrics.ProcessMetrics;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.ConfigurableApplicationContext;
 
+@SpringBootApplication
+@EnableScheduling
 public class SystemMonitorApp {
+    
+    private static int processCount = 5; // Default value
+    private static int refreshRate = 2; // Default value in seconds
+    
     public static void main(String[] args) {
-        System.out.println("Starting System Monitor...");
-        
-        // Create monitoring engine
-        MonitoringEngine engine = new MonitoringEngine();
+        System.out.println("Starting System Monitor with Web Interface...");
         
         // Parse command line arguments
-        parseArgs(args, engine);
+        parseArgs(args);
         
-        // Start monitoring
-        engine.startMonitoring();
+        // Set the refresh rate as a system property for Spring to use
+        System.setProperty("METRICS_REFRESH_RATE", String.valueOf(refreshRate * 1000));
+        
+        // Start Spring Boot application
+        ConfigurableApplicationContext context = SpringApplication.run(SystemMonitorApp.class, args);
+        
+        // Get the MonitoringEngine bean and configure it
+        MonitoringEngine engine = context.getBean(MonitoringEngine.class);
+        engine.setProcessDisplayCount(processCount);
+        engine.setRefreshRate(refreshRate);
     }
     
-    private static void parseArgs(String[] args, MonitoringEngine engine) {
+    @Bean
+    public ApplicationListener<ApplicationReadyEvent> onApplicationReady() {
+        return event -> {
+            System.out.println("System Monitor is running!");
+            System.out.println("Web interface available at: http://localhost:8080");
+            System.out.println("API endpoints:");
+            System.out.println("- http://localhost:8080/api/cpu");
+            System.out.println("- http://localhost:8080/api/memory");
+            System.out.println("- http://localhost:8080/api/processes");
+            System.out.println("- http://localhost:8080/api/system");
+            System.out.println("- http://localhost:8080/api/all");
+        };
+    }
+    
+    private static void parseArgs(String[] args) {
         if (args.length > 0) {
             try {
                 for (int i = 0; i < args.length; i++) {
                     // Check for process count flag: -p or --processes
                     if ((args[i].equals("-p") || args[i].equals("--processes")) && i + 1 < args.length) {
-                        int processCount = Integer.parseInt(args[i + 1]);
+                        processCount = Integer.parseInt(args[i + 1]);
                         System.out.println("Setting process display count to: " + processCount);
-                        engine.setProcessDisplayCount(processCount);
                         i++; // Skip the next argument since we've processed it
                     }
                     
                     // Check for refresh rate flag: -r or --refresh
                     else if ((args[i].equals("-r") || args[i].equals("--refresh")) && i + 1 < args.length) {
-                        int refreshRate = Integer.parseInt(args[i + 1]);
+                        refreshRate = Integer.parseInt(args[i + 1]);
                         if (refreshRate < 1) {
                             System.err.println("Refresh rate must be at least 1 second. Using default (2s).");
+                            refreshRate = 2;
                         } else {
                             System.out.println("Setting refresh rate to: " + refreshRate + " seconds");
-                            engine.setRefreshRate(refreshRate);
                         }
                         i++; // Skip the next argument since we've processed it
                     }
@@ -49,7 +80,7 @@ public class SystemMonitorApp {
     }
     
     private static void printUsage() {
-        System.out.println("Usage: java -cp \"build:lib/*\" com.monitor.SystemMonitorApp [options]");
+        System.out.println("Usage: java -jar system-monitor.jar [options]");
         System.out.println("Options:");
         System.out.println("  -p, --processes <count>   Number of top processes to display (default: 5)");
         System.out.println("  -r, --refresh <seconds>   Refresh rate in seconds (default: 2)");

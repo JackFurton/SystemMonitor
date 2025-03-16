@@ -1,52 +1,50 @@
 #!/bin/bash
 
-# Create lib directory if it doesn't exist
-mkdir -p lib
-
-# Check if OSHI is already downloaded
-if [ ! -f "lib/oshi-core-6.4.8.jar" ]; then
-    echo "Downloading OSHI Core..."
-    curl -L "https://repo1.maven.org/maven2/com/github/oshi/oshi-core/6.4.8/oshi-core-6.4.8.jar" -o "lib/oshi-core-6.4.8.jar"
+# Check if mvn command exists
+if ! command -v mvn &> /dev/null; then
+    echo "Maven is not installed or not in the PATH. Please install Maven to build the application."
+    exit 1
 fi
 
-# Check if JNA is already downloaded
-if [ ! -f "lib/jna-5.13.0.jar" ]; then
-    echo "Downloading JNA..."
-    curl -L "https://repo1.maven.org/maven2/net/java/dev/jna/jna/5.13.0/jna-5.13.0.jar" -o "lib/jna-5.13.0.jar"
-fi
+# Parse command line arguments for Maven
+MAVEN_ARGS=""
+APP_ARGS=""
+parsing_app_args=false
 
-# Check if JNA Platform is already downloaded
-if [ ! -f "lib/jna-platform-5.13.0.jar" ]; then
-    echo "Downloading JNA Platform..."
-    curl -L "https://repo1.maven.org/maven2/net/java/dev/jna/jna-platform/5.13.0/jna-platform-5.13.0.jar" -o "lib/jna-platform-5.13.0.jar"
-fi
-
-# Check if SLF4J is already downloaded
-if [ ! -f "lib/slf4j-api-2.0.9.jar" ]; then
-    echo "Downloading SLF4J API..."
-    curl -L "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/2.0.9/slf4j-api-2.0.9.jar" -o "lib/slf4j-api-2.0.9.jar"
-fi
-
-# Check if SLF4J Simple is already downloaded
-if [ ! -f "lib/slf4j-simple-2.0.9.jar" ]; then
-    echo "Downloading SLF4J Simple..."
-    curl -L "https://repo1.maven.org/maven2/org/slf4j/slf4j-simple/2.0.9/slf4j-simple-2.0.9.jar" -o "lib/slf4j-simple-2.0.9.jar"
-fi
-
-# Create build directory
-mkdir -p build
-
-# Compile Java code
-echo "Compiling Java code..."
-javac -d build -cp "lib/*" src/main/java/com/monitor/metrics/*.java src/main/java/com/monitor/core/*.java src/main/java/com/monitor/*.java
-
-# Check if compilation was successful
-if [ $? -eq 0 ]; then
-    echo "Compilation successful!"
+for arg in "$@"; do
+    if [ "$arg" = "--" ]; then
+        # Everything after "--" is passed to the application
+        parsing_app_args=true
+        continue
+    fi
     
-    # Run the application with any command line arguments passed to this script
-    echo "Running the application..."
-    java -cp "build:lib/*" com.monitor.SystemMonitorApp "$@"
+    if [ "$parsing_app_args" = true ]; then
+        APP_ARGS="$APP_ARGS $arg"
+    else
+        MAVEN_ARGS="$MAVEN_ARGS $arg"
+    fi
+done
+
+# Build the application with Maven
+echo "Building the application with Maven..."
+mvn clean package $MAVEN_ARGS
+
+# Check if the build was successful
+if [ $? -eq 0 ]; then
+    echo "Build successful!"
+    
+    # Run the application with Spring Boot
+    echo "Starting the System Monitor with Web Interface..."
+    echo "Web UI will be available at http://localhost:8080"
+    
+    # If we have application arguments, pass them to the Spring Boot app
+    if [ -n "$APP_ARGS" ]; then
+        echo "Running with arguments: $APP_ARGS"
+        java -jar target/system-monitor-1.0-SNAPSHOT.jar $APP_ARGS
+    else
+        java -jar target/system-monitor-1.0-SNAPSHOT.jar
+    fi
 else
-    echo "Compilation failed."
+    echo "Build failed."
+    exit 1
 fi

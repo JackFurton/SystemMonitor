@@ -45,4 +45,8 @@ public class CpuMetrics {
     public double getCpuUsage() {
         return cpuUsage;
     }
+    
+    public CentralProcessor getProcessor() {
+        return processor;
+    }
 }
