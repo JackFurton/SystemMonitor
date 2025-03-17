@@ -55,6 +55,19 @@ body {
     100% { transform: scale(1); }
 }
 
+/* Connection error styling */
+#connectionStatus {
+    padding: 3px 7px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: normal;
+    animation: blinker 1s linear infinite;
+}
+
+@keyframes blinker {
+    50% { opacity: 0.5; }
+}
+
 /* Value displays */
 h2 {
     font-size: 2.5rem;

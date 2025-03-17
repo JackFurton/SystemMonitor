@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,8 +33,9 @@ public class MetricsController {
      */
     @GetMapping({"/", "/all", "/metrics"})
     public ResponseEntity<Map<String, Object>> getAllMetrics() {
-        // Ensure metrics are collected
-        monitoringEngine.collectMetrics();
+        try {
+            // Ensure metrics are collected
+            monitoringEngine.collectMetrics();
         
         Map<String, Object> response = new HashMap<>();
         
@@ -42,6 +44,28 @@ public class MetricsController {
         systemInfo.put("os", monitoringEngine.getSystemMetrics().getSystemInfo().getOperatingSystem().toString());
         systemInfo.put("refreshRate", monitoringEngine.getRefreshRateSeconds());
         systemInfo.put("timestamp", System.currentTimeMillis());
+        
+        // Check if running with elevated permissions
+        boolean isRunningWithSudo = false;
+        try {
+            String username = System.getProperty("user.name");
+            // Check for root or admin user
+            boolean isElevatedUser = "root".equals(username) || username.toLowerCase().startsWith("admin");
+            
+            // Also check if network interfaces have been loaded successfully via our specialized PcapNetworkUtil
+            boolean hasNetworkInterfaces = false;
+            if (monitoringEngine.getNetworkMetrics().getNetworkInfo() != null && 
+                monitoringEngine.getNetworkMetrics().getNetworkInfo().size() > 1) {
+                // More than just the global info means we have interfaces
+                hasNetworkInterfaces = true;
+            }
+            
+            isRunningWithSudo = isElevatedUser || hasNetworkInterfaces;
+        } catch (Exception e) {
+            System.err.println("Error checking sudo status: " + e.getMessage());
+            // Ignore - default to false
+        }
+        systemInfo.put("runningWithSudo", isRunningWithSudo);
         response.put("system", systemInfo);
         
         // CPU metrics
@@ -89,28 +113,84 @@ public class MetricsController {
             .collect(Collectors.toList());
         response.put("processes", processList);
         
+        // Disk metrics
+        List<Map<String, Object>> diskInfo = monitoringEngine.getDiskMetrics().getDiskInfo();
+        response.put("disks", diskInfo);
+        
+        // GPU metrics
+        List<Map<String, Object>> gpuInfo = monitoringEngine.getGpuMetrics().getGpuInfo();
+        response.put("gpus", gpuInfo);
+        
+        // Network metrics
+        List<Map<String, Object>> networkInfo = monitoringEngine.getNetworkMetrics().getNetworkInfo();
+        
+        // Create a properly structured network response
+        Map<String, Object> networkData = new HashMap<>();
+        
+        // Add connection stats from the first entry (if it exists)
+        if (!networkInfo.isEmpty()) {
+            try {
+                // Create a defensive copy to avoid concurrent modification
+                List<Map<String, Object>> networkInfoCopy = new ArrayList<>(networkInfo);
+                
+                Map<String, Object> globalInfo = new HashMap<>(networkInfoCopy.get(0));
+                networkData.putAll(globalInfo);
+                
+                // Create interfaces list from remaining entries with defensive copy
+                List<Map<String, Object>> interfaces = new ArrayList<>();
+                if (networkInfoCopy.size() > 1) {
+                    for (int i = 1; i < networkInfoCopy.size(); i++) {
+                        interfaces.add(new HashMap<>(networkInfoCopy.get(i)));
+                    }
+                }
+                
+                // Mark if sudo is needed for full network monitoring
+                if (!isRunningWithSudo && System.getProperty("os.name").toLowerCase().contains("mac")) {
+                    for (Map<String, Object> netInterface : interfaces) {
+                        netInterface.put("requiresSudo", true);
+                    }
+                }
+                
+                networkData.put("interfaces", interfaces);
+            } catch (Exception e) {
+                System.err.println("Error processing network info: " + e.getMessage());
+                e.printStackTrace();
+                // Provide empty interfaces list if error occurs
+                networkData.put("interfaces", new ArrayList<>());
+            }
+        }
+        
+        response.put("network", networkData);
+        
+        // Temperature metrics
+        Map<String, Object> temperatureInfo = monitoringEngine.getTemperatureMetrics().getTemperatureInfo();
+        response.put("temperature", temperatureInfo);
+        
         return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("Error generating metrics response: " + e.getMessage());
+            e.printStackTrace();
+            
+            // Return a simple error response
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Error generating metrics: " + e.getMessage());
+            errorResponse.put("timestamp", System.currentTimeMillis());
+            return ResponseEntity.status(500).body(errorResponse);
+        }
     }
     
-    // Legacy endpoints redirect to the main endpoint for backward compatibility
-    
-    @GetMapping("/cpu")
-    public ResponseEntity<Map<String, Object>> getCpuMetrics() {
-        return getAllMetrics();
-    }
-
-    @GetMapping("/memory")
-    public ResponseEntity<Map<String, Object>> getMemoryMetrics() {
-        return getAllMetrics();
-    }
-
-    @GetMapping("/processes")
-    public ResponseEntity<Map<String, Object>> getProcessMetrics() {
-        return getAllMetrics();
-    }
-
-    @GetMapping("/system")
-    public ResponseEntity<Map<String, Object>> getSystemInfo() {
+    // Single endpoint for backward compatibility with legacy endpoint paths
+    @GetMapping({
+        "/cpu", 
+        "/memory", 
+        "/processes", 
+        "/system", 
+        "/disks", 
+        "/gpus", 
+        "/network", 
+        "/temperature"
+    })
+    public ResponseEntity<Map<String, Object>> getLegacyMetrics() {
         return getAllMetrics();
     }
 }

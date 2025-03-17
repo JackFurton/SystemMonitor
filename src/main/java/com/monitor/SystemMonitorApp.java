@@ -1,6 +1,8 @@
 package com.monitor;
 
 import com.monitor.core.MonitoringEngine;
+import com.monitor.util.PcapNetworkUtil;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -13,6 +15,11 @@ import org.springframework.context.ConfigurableApplicationContext;
 @SpringBootApplication
 @EnableScheduling
 public class SystemMonitorApp {
+    // Configure logging to silence MacNetworkParams errors on macOS
+    static {
+        // This will silence the getaddrinfo errors in OSHI's MacNetworkParams class
+        System.setProperty("org.slf4j.simpleLogger.log.oshi.software.os.mac.MacNetworkParams", "OFF");
+    }
     
     private static int processCount = 5; // Default value
     private static int refreshRate = 2; // Default value in seconds
@@ -33,6 +40,18 @@ public class SystemMonitorApp {
         MonitoringEngine engine = context.getBean(MonitoringEngine.class);
         engine.setProcessDisplayCount(processCount);
         engine.setRefreshRate(refreshRate);
+        
+        // Register shutdown hook to clean up resources
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("Stopping monitoring and cleaning up resources...");
+            
+            // Stop pcap packet capture if it's running
+            try {
+                PcapNetworkUtil.stopNetworkMonitoring();
+            } catch (Exception e) {
+                System.err.println("Error stopping network monitoring: " + e.getMessage());
+            }
+        }));
     }
     
     @Bean
@@ -45,6 +64,10 @@ public class SystemMonitorApp {
             System.out.println("- http://localhost:8080/api/memory");
             System.out.println("- http://localhost:8080/api/processes");
             System.out.println("- http://localhost:8080/api/system");
+            System.out.println("- http://localhost:8080/api/disks");
+            System.out.println("- http://localhost:8080/api/gpus");
+            System.out.println("- http://localhost:8080/api/network");
+            System.out.println("- http://localhost:8080/api/temperature");
             System.out.println("- http://localhost:8080/api/all");
         };
     }

@@ -1,9 +1,13 @@
 package com.monitor.core;
 
 import com.monitor.metrics.CpuMetrics;
+import com.monitor.metrics.DiskMetrics;
+import com.monitor.metrics.GpuMetrics;
 import com.monitor.metrics.MemoryMetrics;
+import com.monitor.metrics.NetworkMetrics;
 import com.monitor.metrics.ProcessMetrics;
 import com.monitor.metrics.SystemMetrics;
+import com.monitor.metrics.TemperatureMetrics;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -17,6 +21,10 @@ public class MonitoringEngine {
     private final CpuMetrics cpuMetrics;
     private final MemoryMetrics memoryMetrics;
     private final ProcessMetrics processMetrics;
+    private final DiskMetrics diskMetrics;
+    private final GpuMetrics gpuMetrics;
+    private final NetworkMetrics networkMetrics;
+    private final TemperatureMetrics temperatureMetrics;
     
     private int refreshRateSeconds = 2; // Default refresh rate
     private boolean consoleOutput = false; // Disable console output by default in web mode
@@ -26,6 +34,10 @@ public class MonitoringEngine {
         this.cpuMetrics = new CpuMetrics();
         this.memoryMetrics = new MemoryMetrics();
         this.processMetrics = new ProcessMetrics();
+        this.diskMetrics = new DiskMetrics();
+        this.gpuMetrics = new GpuMetrics();
+        this.networkMetrics = new NetworkMetrics();
+        this.temperatureMetrics = new TemperatureMetrics();
     }
     
     @PostConstruct
@@ -58,6 +70,28 @@ public class MonitoringEngine {
             
             // Collect Process metrics
             processMetrics.collectMetrics();
+            
+            // Collect Disk metrics
+            diskMetrics.collectMetrics();
+            
+            // Collect GPU metrics
+            gpuMetrics.collectMetrics();
+            
+            // Collect Network metrics with error handling
+            try {
+                networkMetrics.collectMetrics();
+            } catch (Exception e) {
+                System.err.println("Error collecting network metrics: " + e.getMessage());
+                // Continue with other metrics
+            }
+            
+            // Collect Temperature metrics with error handling
+            try {
+                temperatureMetrics.collectMetrics();
+            } catch (Exception e) {
+                System.err.println("Error collecting temperature metrics: " + e.getMessage());
+                // Continue with other metrics
+            }
         } catch (Exception e) {
             System.err.println("Error collecting metrics: " + e.getMessage());
             e.printStackTrace();
@@ -83,6 +117,18 @@ public class MonitoringEngine {
                 
                 // Display Process metrics
                 processMetrics.displayMetrics();
+                
+                // Display Disk metrics
+                diskMetrics.displayMetrics();
+                
+                // Display GPU metrics
+                gpuMetrics.displayMetrics();
+                
+                // Display Network metrics
+                networkMetrics.displayMetrics();
+                
+                // Display Temperature metrics
+                temperatureMetrics.displayMetrics();
                 
                 System.out.println("=========================");
                 System.out.println("Press Ctrl+C to exit");
@@ -148,6 +194,22 @@ public class MonitoringEngine {
     
     public ProcessMetrics getProcessMetrics() {
         return processMetrics;
+    }
+    
+    public DiskMetrics getDiskMetrics() {
+        return diskMetrics;
+    }
+    
+    public GpuMetrics getGpuMetrics() {
+        return gpuMetrics;
+    }
+    
+    public NetworkMetrics getNetworkMetrics() {
+        return networkMetrics;
+    }
+    
+    public TemperatureMetrics getTemperatureMetrics() {
+        return temperatureMetrics;
     }
     
     public int getRefreshRateSeconds() {

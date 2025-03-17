@@ -11,6 +11,7 @@ public class CpuMetrics {
     private long[] prevTicks;
     private long[] currTicks;
     private double cpuUsage;
+    private static double lastCpuLoad = 0.0; // Static to share between instances
     
     public void collectMetrics() {
         if (SystemMetrics.hardware == null) {
@@ -35,6 +36,9 @@ public class CpuMetrics {
         long totalCpu = user + nice + sys + idle + iowait + irq + softirq + steal;
         
         cpuUsage = totalCpu > 0 ? 100d * (totalCpu - idle) / totalCpu : 0d;
+        
+        // Update the static last CPU load for use by other components
+        lastCpuLoad = cpuUsage;
     }
     
     public void displayMetrics() {
@@ -48,5 +52,13 @@ public class CpuMetrics {
     
     public CentralProcessor getProcessor() {
         return processor;
+    }
+    
+    /**
+     * Get the last CPU load percentage (0-100)
+     * This is used by other components like TemperatureMetrics to adjust simulations
+     */
+    public static double getLastCpuLoad() {
+        return lastCpuLoad;
     }
 }

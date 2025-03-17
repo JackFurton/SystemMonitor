@@ -24,4 +24,24 @@ public class FormatUtil {
     public static String formatPercent(double value) {
         return df.format(value) + "%";
     }
+    
+    /**
+     * Format bit rate into a human-readable string (Kbps, Mbps, Gbps, etc.)
+     */
+    public static String formatBitRate(long bitsPerSecond) {
+        int unit = 1000; // Network speeds typically use 1000 (not 1024)
+        if (bitsPerSecond < unit) return bitsPerSecond + " bps";
+        
+        int exp = (int) (Math.log(bitsPerSecond) / Math.log(unit));
+        String pre = "kMGTPE".charAt(exp-1) + "";
+        return df.format(bitsPerSecond / Math.pow(unit, exp)) + " " + pre + "bps";
+    }
+    
+    /**
+     * Format a temperature value in degrees Celsius
+     */
+    public static String formatTemperature(double celsius) {
+        if (celsius <= 0) return "N/A";
+        return df.format(celsius) + "°C";
+    }
 }
