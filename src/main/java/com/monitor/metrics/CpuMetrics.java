@@ -17,28 +17,34 @@ public class CpuMetrics {
         if (SystemMetrics.hardware == null) {
             throw new IllegalStateException("System hardware not initialized");
         }
-        
+
         processor = SystemMetrics.hardware.getProcessor();
         prevTicks = currTicks != null ? currTicks : processor.getSystemCpuLoadTicks();
         // Sleep a bit to get a difference
         try { Thread.sleep(100); } catch (InterruptedException ignored) {}
         currTicks = processor.getSystemCpuLoadTicks();
-        
-        long user = currTicks[TickType.USER.getIndex()] - prevTicks[TickType.USER.getIndex()];
-        long nice = currTicks[TickType.NICE.getIndex()] - prevTicks[TickType.NICE.getIndex()];
-        long sys = currTicks[TickType.SYSTEM.getIndex()] - prevTicks[TickType.SYSTEM.getIndex()];
-        long idle = currTicks[TickType.IDLE.getIndex()] - prevTicks[TickType.IDLE.getIndex()];
-        long iowait = currTicks[TickType.IOWAIT.getIndex()] - prevTicks[TickType.IOWAIT.getIndex()];
-        long irq = currTicks[TickType.IRQ.getIndex()] - prevTicks[TickType.IRQ.getIndex()];
-        long softirq = currTicks[TickType.SOFTIRQ.getIndex()] - prevTicks[TickType.SOFTIRQ.getIndex()];
-        long steal = currTicks[TickType.STEAL.getIndex()] - prevTicks[TickType.STEAL.getIndex()];
-        
-        long totalCpu = user + nice + sys + idle + iowait + irq + softirq + steal;
-        
-        cpuUsage = totalCpu > 0 ? 100d * (totalCpu - idle) / totalCpu : 0d;
-        
+
+        cpuUsage = calculateCpuUsage(prevTicks, currTicks);
+
         // Update the static last CPU load for use by other components
         lastCpuLoad = cpuUsage;
+    }
+
+    /**
+     * Calculate CPU usage percent from previous and current tick arrays.
+     */
+    static double calculateCpuUsage(long[] previous, long[] current) {
+        long user = current[TickType.USER.getIndex()] - previous[TickType.USER.getIndex()];
+        long nice = current[TickType.NICE.getIndex()] - previous[TickType.NICE.getIndex()];
+        long sys = current[TickType.SYSTEM.getIndex()] - previous[TickType.SYSTEM.getIndex()];
+        long idle = current[TickType.IDLE.getIndex()] - previous[TickType.IDLE.getIndex()];
+        long iowait = current[TickType.IOWAIT.getIndex()] - previous[TickType.IOWAIT.getIndex()];
+        long irq = current[TickType.IRQ.getIndex()] - previous[TickType.IRQ.getIndex()];
+        long softirq = current[TickType.SOFTIRQ.getIndex()] - previous[TickType.SOFTIRQ.getIndex()];
+        long steal = current[TickType.STEAL.getIndex()] - previous[TickType.STEAL.getIndex()];
+
+        long totalCpu = user + nice + sys + idle + iowait + irq + softirq + steal;
+        return totalCpu > 0 ? 100d * (totalCpu - idle) / totalCpu : 0d;
     }
     
     public void displayMetrics() {
